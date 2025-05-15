@@ -4,6 +4,9 @@ import { Auth0Service } from './auth0/auth0.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { PrismaService } from './prisma/prisma.service';
+import { HealthModule } from './health/health.module';
+import { AuthService } from './auth/auth.service';
 
 @Module({
   imports: [
@@ -12,9 +15,12 @@ import { LoggerModule } from 'nestjs-pino';
       secret: process.env.APP_SECRET,
       signOptions: { expiresIn: process.env.EXPIRES_IN },
     }),
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     LoggerModule.forRoot(),
+    HealthModule,
   ],
-  providers: [Auth0Service],
+  providers: [Auth0Service, PrismaService, AuthService],
 })
 export class AppModule {}

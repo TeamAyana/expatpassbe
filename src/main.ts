@@ -12,7 +12,7 @@ async function bootstrap() {
   })
   app.use(helmet());
   app.enableCors({
-    origin: 'http://your-frontend-url.com', // Replace with your frontend URL
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
