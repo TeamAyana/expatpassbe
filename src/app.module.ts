@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
-import { Auth0Service } from './auth0/auth0.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -21,6 +20,6 @@ import { AuthService } from './auth/auth.service';
     LoggerModule.forRoot(),
     HealthModule,
   ],
-  providers: [Auth0Service, PrismaService, AuthService],
+  providers: [PrismaService, AuthService],
 })
 export class AppModule {}

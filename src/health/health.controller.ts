@@ -15,7 +15,7 @@ export class HealthController {
   @HealthCheck()
   check() {
     return this.health.check([
-      () => this.http.pingCheck('swagger', 'http://localhost:7100/api'),
+      () => this.http.pingCheck('swagger', 'http://localhost:7100/docs'),
     ]);
   }
 

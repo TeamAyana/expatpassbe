@@ -38,6 +38,7 @@
     "express-openid-connect": "^2.18.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.2.0",
     "nestjs-pino": "^4.4.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

@@ -1,22 +1,38 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-auth0';
+import { Injectable } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { JwtPayload } from "jsonwebtoken";
+import * as JwksRsa from "jwks-rsa";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { AuthService } from "src/auth/auth.service";
 
 @Injectable()
-export class Auth0Strategy extends PassportStrategy(Strategy) {
-  constructor(private configService: ConfigService) {
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private authService: AuthService) {
     super({
-      domain: configService.get<string>('AUTH0_DOMAIN', ""),
-      clientID: configService.get<string>('AUTH0_CLIENT_ID', ""),
-      clientSecret: configService.get<string>('AUTH0_CLIENT_SECRET', ""),
-      callbackURL: 'http://localhost:3000/auth/callback',
-      scopeSeparator: 'openid profile email',
-      passReqToCallback: true,
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKeyProvider: JwksRsa.passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
+      }),
+      audience: process.env.AUTH0_AUDIENCE,
+      issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+      algorithms: ['RS256'],
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, extraParams: any, profile: any, done: Function) {
-    done(null, profile); // Pass the user profile to the next middleware
+  async validate(payload: JwtPayload) {
+    if (payload.sub === undefined) {
+      return;
+    }
+      
+    const user = await this.authService.syncUser({
+      userId: payload.sub,
+      email: payload.email,
+      name: payload.name,
+    });
+
+    return user; // attached to request as req.user
   }
 }
