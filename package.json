@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.821.0",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
@@ -35,6 +36,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "csrf-csrf": "^4.0.2",
+    "express-oauth2-jwt-bearer": "^1.6.1",
     "express-openid-connect": "^2.18.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -57,6 +59,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/multer": "^1.4.12",
     "@types/node": "^22.10.7",
     "@types/passport-auth0": "^1.0.9",
     "@types/passport-jwt": "^4.0.1",
@@ -65,6 +68,7 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
+    "i": "^0.3.7",
     "jest": "^29.7.0",
     "passport-auth0": "^1.4.4",
     "prettier": "^3.4.2",

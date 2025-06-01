@@ -7,7 +7,7 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api/v1', {
-    exclude: ['health']
+    exclude: ['health'],
   });
   app.use(helmet());
   app.enableCors({
@@ -24,7 +24,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 
 bootstrap();

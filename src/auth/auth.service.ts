@@ -6,7 +6,9 @@ export class AuthService {
   constructor(private prisma: PrismaService) {}
 
   async syncUser(auth0User: { userId: string; email: string; name: string }) {
-    let user = await this.prisma.user.findUnique({ where: { auth0Id: auth0User.userId } });
+    let user = await this.prisma.user.findUnique({
+      where: { auth0Id: auth0User.userId },
+    });
 
     if (!user) {
       user = await this.prisma.user.create({

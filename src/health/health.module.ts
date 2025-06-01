@@ -8,6 +8,6 @@ import { PrismaClient } from 'generated/prisma';
 @Module({
   imports: [TerminusModule, HttpModule],
   controllers: [HealthController],
-  providers: [PrismaService, PrismaHealthIndicator, PrismaClient], 
+  providers: [PrismaService, PrismaHealthIndicator, PrismaClient],
 })
 export class HealthModule {}

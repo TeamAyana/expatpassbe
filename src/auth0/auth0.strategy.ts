@@ -1,9 +1,9 @@
-import { Injectable } from "@nestjs/common";
-import { PassportStrategy } from "@nestjs/passport";
-import { JwtPayload } from "jsonwebtoken";
-import * as JwksRsa from "jwks-rsa";
-import { ExtractJwt, Strategy } from "passport-jwt";
-import { AuthService } from "src/auth/auth.service";
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { JwtPayload } from 'jsonwebtoken';
+import * as JwksRsa from 'jwks-rsa';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -22,17 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: JwtPayload) {
-    if (payload.sub === undefined) {
-      return;
-    }
-      
-    const user = await this.authService.syncUser({
-      userId: payload.sub,
-      email: payload.email,
-      name: payload.name,
-    });
-
-    return user; // attached to request as req.user
+  validate(payload: JwtPayload) {
+    return payload;
   }
 }
