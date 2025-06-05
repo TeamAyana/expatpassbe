@@ -1,0 +1,29 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# EC2 Instance Configuration
+instance_type = "t3.micro"
+
+# SSH Key Pair (create this in AWS Console first)
+# Leave empty if you don't want SSH access
+key_name = "your-key-pair-name"
+
+# Project Configuration
+project_name = "expatpass-auth"
+
+# Example configurations for different environments:
+
+# Development Environment
+# aws_region = "us-east-1"
+# instance_type = "t3.micro"
+# project_name = "expatpass-auth-dev"
+
+# Staging Environment
+# aws_region = "us-west-2"
+# instance_type = "t3.small"
+# project_name = "expatpass-auth-staging"
+
+# Production Environment
+# aws_region = "us-east-1"
+# instance_type = "t3.medium"
+# project_name = "expatpass-auth-prod"
