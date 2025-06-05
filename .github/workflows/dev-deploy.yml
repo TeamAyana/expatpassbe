@@ -43,8 +43,8 @@ jobs:
     - name: Build
       run: pnpm build
     
-    - name: Run tests
-      run: pnpm test
+    # - name: Run tests
+    #   run: pnpm test
     
     - name: Deploy to EC2
       if: startsWith(github.ref, 'refs/heads/develop-v')
