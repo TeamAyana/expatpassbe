@@ -1,0 +1,49 @@
+name: Deploy to EC2 for develop branch
+
+on:
+  push:
+    branches: [ 'develop-v*.*.*' ]
+  pull_request:
+    branches: [ 'develop-v*.*.*' ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 8
+    
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+    
+    - name: Build
+      run: pnpm build
+    
+    - name: Run tests
+      run: pnpm test
+    
+    - name: Deploy to EC2
+      if: startsWith(github.ref, 'refs/heads/develop-v')
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USERNAME }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ec2-user/deploy/expatpassbe
+          git pull origin ${{ github.ref_name }}
+          pnpm install --frozen-lockfile
+          pnpm build
+          pm2 restart auth-service || pm2 start dist/main.js --name auth-service 
