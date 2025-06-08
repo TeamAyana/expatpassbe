@@ -7,7 +7,6 @@ import { PrismaService } from './prisma/prisma.service';
 import { HealthModule } from './health/health.module';
 import { AuthService } from './auth/auth.service';
 import { UserModule } from './user/user.module';
-import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -22,7 +21,6 @@ import { S3Module } from './s3/s3.module';
     LoggerModule.forRoot(),
     HealthModule,
     UserModule,
-    S3Module,
   ],
   providers: [PrismaService, AuthService],
 })
