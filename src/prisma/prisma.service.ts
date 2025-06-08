@@ -10,11 +10,4 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   async onModuleDestroy() {
     await this.$disconnect();
   }
-
-  async enableShutdownHooks(app: any) {
-    // @ts-ignore - Prisma types are not properly exposed for events
-    this.$on('beforeExit', async () => {
-      await app.close();
-    });
-  }
 }

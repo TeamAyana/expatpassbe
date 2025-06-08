@@ -5,7 +5,7 @@ import {
   HealthCheck,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
-import { PrismaClient } from 'generated/prisma';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {
@@ -13,7 +13,7 @@ export class HealthController {
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
     private db: PrismaHealthIndicator,
-    private prismaClient: PrismaClient, // Inject PrismaClient for database health check
+    private prisma: PrismaService,
   ) {}
 
   @Get('swagger')
@@ -28,7 +28,7 @@ export class HealthController {
   @HealthCheck()
   checkDb() {
     return this.health.check([
-      () => this.db.pingCheck('database', this.prismaClient),
+      () => this.db.pingCheck('database', this.prisma),
     ]);
   }
 }
