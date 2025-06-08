@@ -1,98 +1,232 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Auth Service
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A robust authentication service built with NestJS that provides secure user authentication and management using Auth0 integration.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Overview
 
-## Description
+This service handles user authentication, token management, and user synchronization with Auth0. It provides a secure and scalable solution for managing user authentication in your application.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Key Features
 
-## Project setup
+- Auth0 integration for secure authentication
+- JWT token verification and management
+- User synchronization with local database
+- Password-based authentication
+- OAuth2 code exchange flow
+- Secure token handling and verification
 
-```bash
-$ pnpm install
+## Prerequisites
+
+- Node.js (v18 or higher)
+- pnpm (v8 or higher)
+- PostgreSQL database
+- Auth0 account and application setup
+
+## Environment Setup
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Auth0 Configuration
+AUTH0_DOMAIN=your-tenant.auth0.com
+AUTH0_CLIENT_ID=your-client-id
+AUTH0_CLIENT_SECRET=your-client-secret
+AUTH0_AUDIENCE=your-api-identifier
+AUTH0_CALLBACK_URL=http://localhost:3000/callback
+
+# Database Configuration
+DATABASE_URL="postgresql://user:password@localhost:5432/dbname?schema=public"
 ```
 
-## Compile and run the project
+## Installation
 
 ```bash
-# development
-$ pnpm run start
+# Install dependencies
+$ pnpm install
 
-# watch mode
+# Generate Prisma client
+$ pnpm prisma generate
+
+# Run database migrations
+$ pnpm prisma migrate dev
+```
+
+## Running the Application
+
+```bash
+# Development mode
 $ pnpm run start:dev
 
-# production mode
+# Production mode
+$ pnpm run build
 $ pnpm run start:prod
 ```
 
-## Run tests
+## API Documentation
+
+Once the application is running, you can access the Swagger API documentation at:
+
+```
+http://localhost:3000/docs
+```
+
+## Authentication Flows
+
+### OAuth2 Code Flow
+1. Redirect users to Auth0 login page
+2. Handle callback with authorization code
+3. Exchange code for tokens
+4. Verify and process ID token
+5. Sync user data with local database
+
+### Password Flow
+1. Authenticate users with username/password
+2. Receive and verify tokens
+3. Process user profile data
+
+## Development
+
+### Project Structure
+
+```
+src/
+├── auth/           # Authentication related code
+├── prisma/         # Database configuration and models
+├── main.ts         # Application entry point
+└── app.module.ts   # Root application module
+```
+
+### Testing
 
 ```bash
-# unit tests
+# Unit tests
 $ pnpm run test
 
 # e2e tests
 $ pnpm run test:e2e
 
-# test coverage
+# Test coverage
 $ pnpm run test:cov
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Code Style
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+# Format code
+$ pnpm run format
+
+# Lint code
+$ pnpm run lint
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Security Considerations
 
-## Resources
+- All tokens are verified using Auth0's JWKS endpoint
+- JWT tokens are validated for signature, expiration, and claims
+- CSRF protection is implemented
+- Helmet is used for security headers
+- Environment variables are used for sensitive configuration
 
-Check out a few resources that may come in handy when working with NestJS:
+## Contributing
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification for our commit messages. This helps maintain a clean and consistent git history.
 
-## Support
+### Branch Naming Convention
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Branches should be named following this pattern:
+```
+<type>/<ticket-number>-<short-description>
+```
 
-## Stay in touch
+Types:
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `docs/` - Documentation changes
+- `style/` - Code style changes (formatting, etc.)
+- `refactor/` - Code refactoring
+- `test/` - Adding or modifying tests
+- `chore/` - Maintenance tasks
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Example: `feature/EX-19-add-user-profile`
+
+### Commit Message Format
+
+Each commit message consists of a **header**, a **body**, and a **footer**:
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+The **header** is mandatory and must conform to the Commit Message Header format.
+
+#### Commit Message Header
+
+```
+<type>(<scope>): <subject>
+```
+
+The **type** must be one of the following:
+- `feat`: A new feature
+- `fix`: A bug fix
+- `docs`: Documentation only changes
+- `style`: Changes that do not affect the meaning of the code
+- `refactor`: A code change that neither fixes a bug nor adds a feature
+- `perf`: A code change that improves performance
+- `test`: Adding missing tests or correcting existing tests
+- `chore`: Changes to the build process or auxiliary tools
+
+The **scope** is optional and represents the section of the codebase that the commit affects.
+
+The **subject** contains a succinct description of the change:
+- Use the imperative, present tense: "change" not "changed" nor "changes"
+- Don't capitalize the first letter
+- No dot (.) at the end
+
+#### Commit Message Body
+
+The body should include the motivation for the change and contrast this with previous behavior.
+
+#### Commit Message Footer
+
+The footer should contain any information about **Breaking Changes** and is also the place to reference GitHub issues that this commit **Closes**.
+
+### Pull Request Process
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/EX-19-amazing-feature`)
+3. Make your changes following the commit message guidelines
+4. Push to the branch (`git push origin feature/EX-19-amazing-feature`)
+5. Open a Pull Request with a clear description of the changes
+6. Ensure all CI checks pass
+7. Get at least one code review approval
+8. Merge only after approval
+
+### Example Commit Messages
+
+```
+feat(auth): add password reset functionality
+
+- Add password reset endpoint
+- Implement email notification
+- Add rate limiting for security
+
+Closes #123
+```
+
+```
+fix(api): resolve token validation issue
+
+- Fix JWT token validation logic
+- Add proper error handling
+- Update tests to cover edge cases
+
+BREAKING CHANGE: Token validation now requires additional claims
+```
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is licensed under the MIT License - see the LICENSE file for details.

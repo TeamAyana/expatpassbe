@@ -1,9 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let prismaService: PrismaService;
+
+  const mockPrismaService = {
+    user: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+  };
   let prismaService: PrismaService;
 
   const mockPrismaService = {
@@ -22,10 +30,21 @@ describe('AuthService', () => {
           useValue: mockPrismaService,
         },
       ],
+      providers: [
+        AuthService,
+        {
+          provide: PrismaService,
+          useValue: mockPrismaService,
+        },
+      ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prismaService = module.get<PrismaService>(PrismaService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -39,7 +58,7 @@ describe('AuthService', () => {
       name: 'Test User',
     };
 
-    it('should create a new user if not exists', async () => {
+    it('should create a new user if one does not exist', async () => {
       mockPrismaService.user.findUnique.mockResolvedValue(null);
       mockPrismaService.user.create.mockResolvedValue({
         id: 1,
@@ -55,12 +74,12 @@ describe('AuthService', () => {
         where: { auth0Id: mockAuth0User.userId },
       });
       expect(mockPrismaService.user.create).toHaveBeenCalledWith({
-        data: {
+        data: expect.objectContaining({
           auth0Id: mockAuth0User.userId,
           email: mockAuth0User.email,
           fullname: mockAuth0User.name,
-          username: expect.any(String),
-        },
+          username: expect.stringMatching(/^test\d{4}$/),
+        }),
       });
       expect(result).toBeDefined();
       expect(result.auth0Id).toBe(mockAuth0User.userId);
@@ -72,7 +91,7 @@ describe('AuthService', () => {
         auth0Id: mockAuth0User.userId,
         email: mockAuth0User.email,
         fullname: mockAuth0User.name,
-        username: 'testuser1234',
+        username: 'test1234',
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(existingUser);
@@ -84,6 +103,42 @@ describe('AuthService', () => {
       });
       expect(mockPrismaService.user.create).not.toHaveBeenCalled();
       expect(result).toEqual(existingUser);
+    });
+  });
+
+  describe('getUser', () => {
+    const mockAuth0User = {
+      userId: 'auth0|123',
+    };
+
+    it('should return user if found', async () => {
+      const existingUser = {
+        id: 1,
+        auth0Id: mockAuth0User.userId,
+        email: 'test@example.com',
+        fullname: 'Test User',
+        username: 'test1234',
+      };
+
+      mockPrismaService.user.findUnique.mockResolvedValue(existingUser);
+
+      const result = await service.getUser(mockAuth0User);
+
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { auth0Id: mockAuth0User.userId },
+      });
+      expect(result).toEqual(existingUser);
+    });
+
+    it('should return null if user not found', async () => {
+      mockPrismaService.user.findUnique.mockResolvedValue(null);
+
+      const result = await service.getUser(mockAuth0User);
+
+      expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
+        where: { auth0Id: mockAuth0User.userId },
+      });
+      expect(result).toBeNull();
     });
   });
 });

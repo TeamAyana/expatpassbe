@@ -3,11 +3,10 @@ import { PrismaHealthIndicator, TerminusModule } from '@nestjs/terminus';
 import { HttpModule } from '@nestjs/axios';
 import { HealthController } from './health.controller';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { PrismaClient } from 'generated/prisma';
 
 @Module({
   imports: [TerminusModule, HttpModule],
   controllers: [HealthController],
-  providers: [PrismaService, PrismaHealthIndicator, PrismaClient],
+  providers: [PrismaService, PrismaHealthIndicator],
 })
 export class HealthModule {}

@@ -1,30 +1,48 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Main');
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+  });
+  const configService = app.get(ConfigService);
+
   app.setGlobalPrefix('api/v1', {
-    exclude: ['health'],
+    exclude: ['Health']
   });
   app.use(helmet());
   app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: configService.get('FRONTEND_URL'),
     credentials: true,
   });
-  const config = new DocumentBuilder()
-    .setTitle('Auth Service')
-    .setDescription('Authentication service')
-    .setVersion('1.0')
-    .build();
-  const document = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+
   app.useGlobalPipes(new ValidationPipe());
 
-  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
+  const config = new DocumentBuilder()
+    .setTitle('Auth Service API')
+    .setDescription('Authentication service for ExpatPass')
+    .setVersion('1.0')
+    .addTag('auth', 'Authentication endpoints')
+    .addTag('health', 'Health check endpoints')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
+  const port = configService.get('PORT');
+  await app.listen(port);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger documentation is available at: http://localhost:${port}/docs`);
 }
 
 bootstrap();
