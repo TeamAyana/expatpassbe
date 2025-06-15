@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Patch } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './createUser.dto';
 import { ResetPasswordDto } from './resetPassword.dto';
@@ -14,5 +14,10 @@ export class UserController {
   @Post('reset-password')
   async resetPassword(@Body() user: ResetPasswordDto) {
     return this.userService.resetPassword(user);
+  }
+
+  @Patch('update-username')
+  async updateUsername(@Body() body: { email: string; newUsername: string }) {
+    return this.userService.updateUsername(body.email, body.newUsername);
   }
 }

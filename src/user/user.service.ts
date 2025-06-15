@@ -1,8 +1,13 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
-const myHeaders = new Headers();
-myHeaders.append('Content-Type', 'application/json');
-myHeaders.append('Accept', 'application/json');
+const myHeaders = {
+  'Content-Type': 'application/json',
+  'Accept': 'application/json',
+};
+
+const AUTH0_CONNECTION = 'Username-Password-Authentication';
 
 interface Auth0Response {
   code?: string;
@@ -14,96 +19,138 @@ interface Auth0Response {
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
+  constructor(private readonly httpService: HttpService) {}
+
   async signupUser(user: { email: string; password: string }) {
     const { email, password } = user;
-    const raw = JSON.stringify({
+    const data = {
       client_id: process.env.AUTH0_CLIENT_ID,
       email: email,
       password: password,
-      connection: 'Username-Password-Authentication',
-      username: 'Henry',
-    });
-
-    const requestOptions: RequestInit = {
-      method: 'POST',
-      headers: myHeaders,
-      body: raw,
-      redirect: 'follow',
+      connection: AUTH0_CONNECTION,
+      username: email.split('@')[0],
     };
 
-    const response: Auth0Response = await fetch(
-      `https://${process.env.AUTH0_DOMAIN}/dbconnections/signup`,
-      requestOptions,
-    ).then((response: Response) => response.json() as Promise<Auth0Response>);
-    console.log(response);
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Auth0Response>(
+          `https://${process.env.AUTH0_DOMAIN}/dbconnections/signup`,
+          data,
+          { headers: myHeaders }
+        )
+      );
+      const res = response.data;
+      this.logger.log(res);
 
-    if (response.statusCode === 400) {
-      if (response.code === 'invalid_password') {
-        // return weak/invalid pass error
-        const { policy, message } = response;
-        const policies = policy.split('\n').map((el: string) => {
-          let cleanText = el.replace(/^\s*\*\s*/gm, '');
-          cleanText = cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
-          return cleanText;
-        });
-        return new HttpException(
-          {
+      if (res.statusCode === 400) {
+        let errorMessage = res.description || 'An error occurred.';
+        let errorPayload: any = { error: res.code, message: errorMessage };
+
+        if (res.code === 'invalid_password') {
+          const policies = res.policy
+            .split('\n')
+            .map((el: string) => {
+              let cleanText = el.replace(/^\s*\*\s*/gm, '');
+              cleanText = cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
+              return cleanText;
+            });
+          errorPayload = {
             error: 'password error',
-            message: message,
+            message: res.message,
             policy: policies,
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      } else if (response.code === 'invalid_signup') {
-        return new HttpException(
-          {
-            error: response.code,
-            message: 'Invalid credentials, Please check and try again.',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      } else {
-        return new HttpException(
-          {
-            error: response.code,
-            message: response.description,
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
+          };
+        } else if (res.code === 'invalid_signup') {
+          errorPayload.message = 'Invalid credentials, Please check and try again.';
+        }
 
-    return { error: null, message: 'Signup successful' };
+        return new HttpException(errorPayload, HttpStatus.BAD_REQUEST);
+      }
+      return { error: null, message: 'Signup successful' };
+    } catch (error) {
+      if (error.response && error.response.data) {
+        return new HttpException(error.response.data, error.response.status || 500);
+      }
+      throw error;
+    }
   }
 
   async resetPassword(user: { email: string }) {
     const { email } = user;
-    const raw = JSON.stringify({
+    const data = {
       client_id: process.env.AUTH0_CLIENT_ID,
       email: email,
-      connection: 'Username-Password-Authentication',
-    });
-
-    const requestOptions: RequestInit = {
-      method: 'POST',
-      headers: myHeaders,
-      body: raw,
-      redirect: 'follow',
+      connection: AUTH0_CONNECTION,
     };
 
-    const response = await fetch(
-      `https://${process.env.AUTH0_DOMAIN}/dbconnections/change_password"`,
-      requestOptions,
-    ).then((response: Response) => response.text());
-    console.log(response);
-
-    if (response === 'Not found') {
-      return new HttpException(
-        {
-          error: response,
-        },
-        HttpStatus.NOT_FOUND,
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `https://${process.env.AUTH0_DOMAIN}/dbconnections/change_password`,
+          data,
+          { headers: myHeaders }
+        )
       );
+      const res = response.data;
+      console.log(res);
+
+      if (res === 'Not found') {
+        return new HttpException(
+          {
+            error: res,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return res;
+    } catch (error) {
+      if (error.response && error.response.data) {
+        return new HttpException(error.response.data, error.response.status || 500);
+      }
+      throw error;
     }
+  }
+
+  async updateUsername(email: string, newUsername: string) {
+    // 1. Get Auth0 Management API token
+    const tokenResponse = await firstValueFrom(
+      this.httpService.post(
+        `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+        {
+          client_id: process.env.AUTH0_MGMT_CLIENT_ID,
+          client_secret: process.env.AUTH0_MGMT_CLIENT_SECRET,
+          audience: `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+          grant_type: 'client_credentials',
+        },
+        { headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+    const accessToken = tokenResponse.data.access_token;
+
+    // 2. Get user by email
+    const userResponse = await firstValueFrom(
+      this.httpService.get(
+        `https://${process.env.AUTH0_DOMAIN}/api/v2/users-by-email`,
+        {
+          params: { email },
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      )
+    );
+    const user = userResponse.data[0];
+    if (!user) {
+      throw new HttpException({ error: 'User not found' }, HttpStatus.NOT_FOUND);
+    }
+
+    // 3. Update username
+    const updateResponse = await firstValueFrom(
+      this.httpService.patch(
+        `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.user_id)}`,
+        { username: newUsername },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      )
+    );
+    return { message: 'Username updated', user: updateResponse.data };
   }
 }
