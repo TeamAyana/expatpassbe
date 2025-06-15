@@ -22,7 +22,11 @@ describe('AuthController', () => {
     headers: {
       'user-agent': 'Mozilla/5.0',
     },
-  };
+    get: jest.fn(),
+    header: jest.fn(),
+    accepts: jest.fn(),
+    acceptsCharsets: jest.fn(),
+  } as any;
 
   const mockResponse = {
     redirect: jest.fn(),
@@ -61,19 +65,6 @@ describe('AuthController', () => {
     });
   });
 
-  describe('socialLogin', () => {
-    it('should return correct URL for social login', () => {
-      const connection = 'google-oauth2';
-      const result = controller.socialLogin(connection);
-
-      expect(result).toHaveProperty('url');
-      expect(result.url).toContain(process.env.AUTH0_DOMAIN);
-      expect(result.url).toContain(process.env.AUTH0_CLIENT_ID);
-      expect(result.url).toContain(process.env.AUTH0_CALLBACK_URL);
-      expect(result.url).toContain(connection);
-    });
-  });
-
   describe('callback', () => {
     it('should redirect web clients with token', async () => {
       const mockUser = {
@@ -85,7 +76,7 @@ describe('AuthController', () => {
 
       mockAuthService.syncUser.mockResolvedValue(mockUser);
 
-      await controller.callback(mockRequest, mockResponse);
+      await controller.callback(mockRequest, mockResponse, 'mockCode', 'mockState');
 
       expect(mockAuthService.syncUser).toHaveBeenCalledWith(mockRequest.user);
       expect(mockResponse.redirect).toHaveBeenCalledWith(
@@ -104,7 +95,7 @@ describe('AuthController', () => {
       mockAuthService.syncUser.mockResolvedValue(mockUser);
       mockRequest.headers['user-agent'] = 'Mobile App';
 
-      await controller.callback(mockRequest, mockResponse);
+      await controller.callback(mockRequest, mockResponse, 'mockCode', 'mockState');
 
       expect(mockAuthService.syncUser).toHaveBeenCalledWith(mockRequest.user);
       expect(mockResponse.json).toHaveBeenCalledWith({

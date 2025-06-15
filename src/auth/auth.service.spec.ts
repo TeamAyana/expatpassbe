@@ -12,24 +12,9 @@ describe('AuthService', () => {
       create: jest.fn(),
     },
   };
-  let prismaService: PrismaService;
-
-  const mockPrismaService = {
-    user: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-    },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        {
-          provide: PrismaService,
-          useValue: mockPrismaService,
-        },
-      ],
       providers: [
         AuthService,
         {
