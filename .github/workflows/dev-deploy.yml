@@ -57,5 +57,7 @@ jobs:
           cd /home/ec2-user/deploy/expatpassbe
           git pull origin ${{ github.ref_name }}
           pnpm install --frozen-lockfile
+          pnpm prisma:migrate
+          pnpm prisma:generate
           pnpm build
           pm2 restart auth-service || pm2 start dist/main.js --name auth-service 

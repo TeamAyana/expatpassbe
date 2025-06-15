@@ -27,8 +27,6 @@ async function bootstrap() {
     .setTitle('Auth Service API')
     .setDescription('Authentication service for ExpatPass')
     .setVersion('1.0')
-    .addTag('auth', 'Authentication endpoints')
-    .addTag('health', 'Health check endpoints')
     .addBearerAuth()
     .build();
 
