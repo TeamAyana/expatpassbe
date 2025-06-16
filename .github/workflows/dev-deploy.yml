@@ -10,6 +10,8 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     environment: development
+    env:
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
     
     steps:
     - uses: actions/checkout@v3
@@ -41,7 +43,7 @@ jobs:
       run: pnpm install --frozen-lockfile
     
     - name: Build
-      run: pnpm build
+      run: pnpm prisma:migrate && pnpm prisma:generate && pnpm build
     
     # - name: Run tests
     #   run: pnpm test
