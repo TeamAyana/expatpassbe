@@ -21,4 +21,19 @@ model User {
   auth0Id   String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  documents Document[]
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  name       String
+  type       String
+  status     String   @default("active")
+  s3Key      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
 }
