@@ -19,7 +19,7 @@ export class ProxyController {
       'DOCUMENT_SERVICE_URL',
       'http://document-service.internal',
     );
-    const url = `${documentServiceUrl}${req.originalUrl}`;
+    const url = `${documentServiceUrl}/api/v1${req.originalUrl}`;
     const method = req.method.toLowerCase();
 
     // Add the internal secret header
