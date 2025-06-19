@@ -47,6 +47,12 @@ jobs:
     
     # - name: Run tests
     #   run: pnpm test
+
+    - name: Setup SSH key for appleboy/drone-ssh
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
     
     - name: Deploy to EC2
       if: startsWith(github.ref, 'refs/heads/develop-v')
