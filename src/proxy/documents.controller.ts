@@ -2,8 +2,9 @@ import { Controller, All, Req, Res } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
-import { AxiosError } from 'axios';
+import { AxiosError, AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
+import { Stream } from 'stream';
 
 @Controller('documents')
 export class ProxyController {
@@ -14,7 +15,10 @@ export class ProxyController {
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
-    const documentServiceUrl = this.configService.get<string>('DOCUMENT_SERVICE_URL', 'http://document-service.internal');
+    const documentServiceUrl = this.configService.get<string>(
+      'DOCUMENT_SERVICE_URL',
+      'http://document-service.internal',
+    );
     const url = `${documentServiceUrl}${req.originalUrl}`;
     const method = req.method.toLowerCase();
 
@@ -25,14 +29,14 @@ export class ProxyController {
     };
 
     try {
-      const response = await firstValueFrom(
-        this.httpService.request({
+      const response: AxiosResponse<Stream> = await firstValueFrom(
+        this.httpService.request<Stream>({
           url,
           method,
           headers,
-          data: req.body,
+          data: req.body as Record<string, any>,
           responseType: 'stream',
-        })
+        }),
       );
 
       res.status(response.status);
@@ -40,10 +44,12 @@ export class ProxyController {
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.response) {
-        res.status(axiosError.response!.status || 500).json(axiosError.response!.data || { message: 'Proxy error' });
+        res
+          .status(axiosError.response.status || 500)
+          .json(axiosError.response.data || { message: 'Proxy error' });
       } else {
         res.status(500).json({ message: 'Proxy error' });
       }
     }
   }
-} 
+}
