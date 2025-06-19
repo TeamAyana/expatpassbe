@@ -6,4 +6,4 @@ import { ProxyController } from './documents.controller';
   imports: [HttpModule],
   controllers: [ProxyController],
 })
-export class ProxyModule {} 
+export class ProxyModule {}
