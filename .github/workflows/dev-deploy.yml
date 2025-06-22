@@ -60,10 +60,11 @@ jobs:
       with:
         SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
         ARGS: "-rltgoDzvO --delete"
-        SOURCE: "src/,prisma/,package.json,pnpm-lock.yaml,tsconfig.json,tsconfig.build.json"
+        SOURCE: "src/, prisma/ ,package.json, pnpm-lock.yaml, tsconfig.json, tsconfig.build.json"
         REMOTE_HOST: ${{ secrets.EC2_HOST }}
         REMOTE_USER: ${{ secrets.EC2_USERNAME }}
         TARGET: "/home/ubuntu/expatpass/auth/expatpassbe"
+        EXCLUDE: "/dist/, /node_modules/"
         SCRIPT_AFTER: |
           cd /home/ubuntu/expatpass/auth/expatpassbe
           pnpm install --frozen-lockfile
