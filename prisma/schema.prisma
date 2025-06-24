@@ -13,6 +13,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Add this enum to define the possible statuses
+enum DocumentStatus {
+  UPLOADED
+  SCANNING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -30,8 +38,12 @@ model Document {
   user       User     @relation(fields: [userId], references: [id])
   name       String
   type       String
-  status     String   @default("active")
+  // Use the new enum for status
+  status     DocumentStatus @default(UPLOADED)
   s3Key      String
+  ocrResult  Json?
+  // Add this field to store OCR results
+  extractedData Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
