@@ -1,4 +1,5 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
+import { Controller, All, Req, Res, Logger } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
@@ -7,19 +8,24 @@ import { firstValueFrom } from 'rxjs';
 import { Stream } from 'stream';
 
 @Controller('documents')
-export class ProxyController {
+@ApiTags('documents')
+export class DocumentsController {
+  private readonly logger = new Logger(DocumentsController.name);
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {}
 
-  @All('*')
+  @All('*path')
   async proxy(@Req() req: Request, @Res() res: Response) {
     const documentServiceUrl = this.configService.get<string>(
       'DOCUMENT_SERVICE_URL',
       'http://document-service.internal',
     );
-    const url = `${documentServiceUrl}/api/v1${req.originalUrl}`;
+    this.logger.log(
+      `Proxying request to : ${documentServiceUrl}${req.originalUrl}`,
+    );
+    const url = `${documentServiceUrl}${req.originalUrl}`;
     const method = req.method.toLowerCase();
 
     // Add the internal secret header
