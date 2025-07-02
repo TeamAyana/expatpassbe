@@ -6,7 +6,7 @@ import { ScanController } from './scan.controller';
 @Module({
   imports: [
     HttpModule.register({
-      timeout: 10000, // 10 seconds
+      timeout: 15000,
     }),
   ],
   controllers: [DocumentsController, ScanController],

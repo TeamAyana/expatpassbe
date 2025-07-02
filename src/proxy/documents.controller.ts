@@ -16,7 +16,7 @@ export class DocumentsController {
     private readonly configService: ConfigService,
   ) {}
 
-  @All('*path')
+  @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
     const documentServiceUrl = this.configService.get<string>(
       'DOCUMENT_SERVICE_URL',
