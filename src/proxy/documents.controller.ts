@@ -18,6 +18,20 @@ export class DocumentsController {
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
+    let userId: string | undefined;
+    if (req.user && typeof req.user === 'object' && req.user !== null) {
+      if (
+        Object.prototype.hasOwnProperty.call(req.user, 'sub') &&
+        typeof (req.user as Record<string, unknown>)['sub'] === 'string'
+      ) {
+        userId = (req.user as Record<string, string>)['sub'];
+      } else if (
+        Object.prototype.hasOwnProperty.call(req.user, 'id') &&
+        typeof (req.user as Record<string, unknown>)['id'] === 'string'
+      ) {
+        userId = (req.user as Record<string, string>)['id'];
+      }
+    }
     const documentServiceUrl = this.configService.get<string>(
       'DOCUMENT_SERVICE_URL',
       'http://document-service.internal',
@@ -31,6 +45,7 @@ export class DocumentsController {
     // Add the internal secret header
     const headers = {
       ...req.headers,
+      'x-user-id': userId,
       'x-internal-secret': this.configService.get<string>('INTERNAL_SECRET'),
     };
 

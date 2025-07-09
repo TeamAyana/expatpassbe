@@ -52,7 +52,9 @@ export class AuthService {
   private verifyIdToken(idToken: string) {
     // In a real implementation, you would verify the JWT signature
     // and validate the claims. For now, we'll just decode it.
-    const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+    const payload = JSON.parse(
+      Buffer.from(idToken.split('.')[1], 'base64').toString(),
+    );
     return {
       userId: payload.sub,
       email: payload.email,
@@ -61,12 +63,12 @@ export class AuthService {
   }
 
   async syncUser(auth0User: { userId: string; email: string; name: string }) {
-    let user = await this.prisma.user.findUnique({
-      where: { auth0Id: auth0User.userId },
+    let user = await this.prisma.users.findUnique({
+      where: { id: auth0User.userId },
     });
 
     if (!user) {
-      user = await this.prisma.user.create({
+      user = await this.prisma.users.create({
         data: {
           auth0Id: auth0User.userId,
           email: auth0User.email,
@@ -74,13 +76,28 @@ export class AuthService {
           username: this.generateUsername(auth0User.email),
         },
       });
+    } else {
+      user = await this.prisma.users.update({
+        where: { id: auth0User.userId },
+        data: {
+          email: auth0User.email,
+          fullname: auth0User.name,
+        },
+      });
+      user.username = this.generateUsername(auth0User.email);
+      await this.prisma.users.update({
+        where: { id: user.id },
+        data: { username: user.username },
+      });
     }
 
     return user;
   }
 
   async getUser(auth0User: { userId: string }) {
-    return this.prisma.user.findUnique({ where: { auth0Id: auth0User.userId } });
+    return this.prisma.users.findUnique({
+      where: { id: auth0User.userId },
+    });
   }
 
   private generateUsername(email: string) {

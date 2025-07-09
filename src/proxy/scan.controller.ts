@@ -13,7 +13,7 @@ export class ScanController {
     private readonly configService: ConfigService,
   ) {}
 
-  @All('*path')
+  @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
     const scanServiceUrl = this.configService.get<string>(
       'SCAN_SERVICE_URL',
