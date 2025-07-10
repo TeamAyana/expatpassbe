@@ -29,7 +29,10 @@ export class UserService {
 
   constructor(private readonly httpService: HttpService) {}
 
-  async signupUser(user: { email: string; password: string }) {
+  async signupUser(user: {
+    email: string;
+    password: string;
+  }): Promise<HttpException | { status: string; message: string; user: any }> {
     const { email, password } = user;
     const data = {
       client_id: process.env.AUTH0_CLIENT_ID,
@@ -75,7 +78,49 @@ export class UserService {
 
         return new HttpException(errorPayload, HttpStatus.BAD_REQUEST);
       }
-      return { error: null, message: 'Signup successful' };
+      return {
+        status: 'success',
+        message: 'Signup successful',
+        user: res,
+      };
+    } catch (error) {
+      this.logger.error(error?.response?.data);
+      if (error?.response && error?.response?.data) {
+        return new HttpException(
+          error.response.data,
+          error.response.status || 500,
+        );
+      }
+      throw error;
+    }
+  }
+
+  async verifyEmail(user: { email: string; code: string }) {
+    const { email, code } = user;
+    const data = {
+      client_id: process.env.AUTH0_CLIENT_ID,
+      email: email,
+      code: code,
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Auth0Response>(
+          `https://${process.env.AUTH0_DOMAIN}/dbconnections/verify`,
+          data,
+          { headers: myHeaders },
+        ),
+      );
+      const res = response.data;
+      this.logger.log(res);
+
+      if (res.statusCode === 400) {
+        return new HttpException(
+          res.description ?? 'Failed to verify email',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+      return { status: 'success', message: 'Email verified', user: res };
     } catch (error) {
       this.logger.error(error?.response?.data);
       if (error?.response && error?.response?.data) {

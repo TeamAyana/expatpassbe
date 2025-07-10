@@ -70,9 +70,7 @@ export class AuthService {
     if (!user) {
       user = await this.prisma.users.create({
         data: {
-          auth0Id: auth0User.userId,
           email: auth0User.email,
-          fullname: auth0User.name,
           username: this.generateUsername(auth0User.email),
         },
       });
@@ -81,7 +79,7 @@ export class AuthService {
         where: { id: auth0User.userId },
         data: {
           email: auth0User.email,
-          fullname: auth0User.name,
+          username: this.generateUsername(auth0User.email),
         },
       });
       user.username = this.generateUsername(auth0User.email);

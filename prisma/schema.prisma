@@ -22,15 +22,16 @@ enum DocumentStatus {
 }
 
 model Users {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String?
-  username  String?
-  fullname  String?
-  auth0Id   String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @default(now())
-  documents Document[]
+  id               String     @id @default(uuid())
+  email            String     @unique
+  emailVerified    Boolean    @default(false)
+  password         String?
+  username         String?
+  verificationCode String?
+  verificationCodeExpiresAt DateTime? 
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @default(now())
+  documents        Document[]
 
   @@map("users")
 }
