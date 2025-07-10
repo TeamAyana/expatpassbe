@@ -54,7 +54,6 @@ jobs:
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
     
-
     - name: Deploy to EC2 via Rsync
       if: startsWith(github.ref, 'refs/heads/develop-v')
       uses: easingthemes/ssh-deploy@v5.0.0
@@ -65,7 +64,7 @@ jobs:
         REMOTE_HOST: ${{ secrets.EC2_HOST }}
         REMOTE_USER: ${{ secrets.EC2_USERNAME }}
         TARGET: "/home/ubuntu/expatpass/auth/expatpassbe"
-        EXCLUDE: "/.github/, "/.git" /node_modules/"
+        EXCLUDE: "/.github/, /.git/, /node_modules/"
         SCRIPT_AFTER: |
           cd /home/ubuntu/expatpass/auth/expatpassbe
           pnpm deploy:dev
