@@ -1,4 +1,12 @@
-import { Controller, All, Req, Res, Logger } from '@nestjs/common';
+import {
+  Controller,
+  All,
+  Req,
+  Res,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
@@ -6,6 +14,7 @@ import { Request, Response } from 'express';
 import { AxiosError, AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { Stream } from 'stream';
+import { UserService } from '@/user/user.service';
 
 @Controller('documents')
 @ApiTags('documents')
@@ -14,24 +23,24 @@ export class DocumentsController {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
-    let userId: string | undefined;
-    if (req.user && typeof req.user === 'object' && req.user !== null) {
-      if (
-        Object.prototype.hasOwnProperty.call(req.user, 'sub') &&
-        typeof (req.user as Record<string, unknown>)['sub'] === 'string'
-      ) {
-        userId = (req.user as Record<string, string>)['sub'];
-      } else if (
-        Object.prototype.hasOwnProperty.call(req.user, 'id') &&
-        typeof (req.user as Record<string, unknown>)['id'] === 'string'
-      ) {
-        userId = (req.user as Record<string, string>)['id'];
-      }
+    const userInfo = await this.userService.getUserInfo(
+      req.headers['authorization'] as string,
+    );
+    if (userInfo instanceof HttpException) {
+      return res.status(userInfo.getStatus()).json(userInfo.getResponse());
     }
+    const userId = (userInfo?.data as { id: string })?.id;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Unauthorized' });
+    }
+    this.logger.log(`User ID: ${userId}`);
     const documentServiceUrl = this.configService.get<string>(
       'DOCUMENT_SERVICE_URL',
       'http://document-service.internal',

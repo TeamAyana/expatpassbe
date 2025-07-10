@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { ResponseDto } from 'src/common/dto/response.dto';
+import { PrismaService } from '@/prisma/prisma.service';
 
 const myHeaders = {
   'Content-Type': 'application/json',
@@ -28,7 +29,10 @@ interface Auth0ErrorResponse {
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   async signupUser(user: {
     email: string;
@@ -95,85 +99,6 @@ export class UserService {
     }
   }
 
-  async verifyEmail(user: { email: string; code: string }) {
-    const { email, code } = user;
-    const data = {
-      client_id: process.env.AUTH0_CLIENT_ID,
-      email: email,
-      code: code,
-    };
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post<Auth0Response>(
-          `https://${process.env.AUTH0_DOMAIN}/dbconnections/verify`,
-          data,
-          { headers: myHeaders },
-        ),
-      );
-      const res = response.data;
-      this.logger.log(res);
-
-      if (res.statusCode === 400) {
-        return new HttpException(
-          res.description ?? 'Failed to verify email',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      return { status: 'success', message: 'Email verified', user: res };
-    } catch (error) {
-      this.logger.error(error?.response?.data);
-      if (error?.response && error?.response?.data) {
-        return new HttpException(
-          error.response.data,
-          error.response.status || 500,
-        );
-      }
-      throw error;
-    }
-  }
-
-  async loginUser(user: {
-    email: string;
-    password: string;
-  }): Promise<HttpException | ResponseDto> {
-    const { email, password } = user;
-    const data = {
-      client_id: process.env.AUTH0_CLIENT_ID,
-      email,
-      password,
-      connection: AUTH0_CONNECTION,
-    };
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post<Auth0Response>(
-          `https://${process.env.AUTH0_DOMAIN}/dbconnections/authorize`,
-          data,
-          { headers: myHeaders },
-        ),
-      );
-      const res = response.data;
-      this.logger.log(res);
-
-      if (res.statusCode === 400) {
-        return new HttpException(
-          { error: res.description ?? 'Failed to login' },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-      return { status: 'success', message: 'Login successful', data: res };
-    } catch (error) {
-      if (error?.response && error?.response?.data) {
-        return new HttpException(
-          error.response.data,
-          error.response.status || 500,
-        );
-      }
-      throw error;
-    }
-  }
-
   async resetPassword(user: {
     email: string;
   }): Promise<HttpException | ResponseDto> {
@@ -217,66 +142,68 @@ export class UserService {
     }
   }
 
-  async updateUsername(email: string, newUsername: string) {
-    // 1. Get Auth0 Management API token
-    const tokenResponse = await firstValueFrom(
-      this.httpService.post(
-        `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
-        {
-          client_id: process.env.AUTH0_MGMT_CLIENT_ID,
-          client_secret: process.env.AUTH0_MGMT_CLIENT_SECRET,
-          audience: `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
-          grant_type: 'client_credentials',
-        },
-        { headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
-    const accessToken = tokenResponse.data.access_token;
-
-    // 2. Get user by email
-    const userResponse = await firstValueFrom(
-      this.httpService.get(
-        `https://${process.env.AUTH0_DOMAIN}/api/v2/users-by-email`,
-        {
-          params: { email },
-          headers: { Authorization: `Bearer ${accessToken}` },
-        },
-      ),
-    );
-    const user = userResponse.data[0];
+  async updateUsername(
+    email: string,
+    username: string,
+  ): Promise<HttpException | ResponseDto> {
+    const user = await this.prisma.users.findUnique({
+      where: { email },
+    });
     if (!user) {
-      throw new HttpException(
-        { error: 'User not found' },
-        HttpStatus.NOT_FOUND,
-      );
+      return new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
-
-    // 3. Update username
-    const updateResponse = await firstValueFrom(
-      this.httpService.patch(
-        `https://${process.env.AUTH0_DOMAIN}/api/v2/users/${encodeURIComponent(user.user_id)}`,
-        { username: newUsername },
-        { headers: { Authorization: `Bearer ${accessToken}` } },
-      ),
-    );
-    return { message: 'Username updated', user: updateResponse.data };
-  }
-
-  async getUserInfo(email: string): Promise<ResponseDto> {
-    const tokenResponse = await firstValueFrom(
-      this.httpService.post(
-        `https://${process.env.AUTH0_DOMAIN}/userinfo?response_type=code&client_id=${process.env.AUTH0_CLIENT_ID}`,
-        {},
-        { headers: { 'Content-Type': 'application/json' } },
-      ),
-    );
-    this.logger.log(tokenResponse.data);
-    const accessToken = tokenResponse.data.access_token;
-
+    const updatedUser = await this.prisma.users.update({
+      where: { id: user.id },
+      data: { username },
+    });
     return {
       status: 'success',
-      message: 'User info fetched',
-      data: tokenResponse.data,
+      message: 'Username updated',
+      data: {
+        id: updatedUser.id,
+        email: updatedUser.email,
+        username: updatedUser.username,
+        createdAt: updatedUser.createdAt,
+        updatedAt: updatedUser.updatedAt,
+      },
     };
+  }
+
+  async getUserInfo(accessToken: string): Promise<HttpException | ResponseDto> {
+    try {
+      const userInfo = await firstValueFrom(
+        this.httpService.get(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
+          headers: { access_token: `${accessToken}` },
+        }),
+      );
+      this.logger.log(userInfo.data);
+      const user = await this.prisma.users.findUnique({
+        where: { email: (userInfo?.data as { email: string })?.email },
+      });
+      if (!user) {
+        return new HttpException('User not found', HttpStatus.NOT_FOUND);
+      }
+
+      return {
+        status: 'success',
+        message: 'User info fetched',
+        data: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
+      };
+    } catch (error) {
+      this.logger.error(error?.response?.data);
+      if (error?.response && error?.response?.data) {
+        return new HttpException(
+          error.response.data,
+          error.response.status || 500,
+        );
+      }
+      throw error;
+    }
   }
 }

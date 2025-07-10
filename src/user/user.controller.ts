@@ -1,7 +1,11 @@
-import { Body, Controller, Post, Patch, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post, Patch } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './createUser.dto';
-import { ResetPasswordDto } from './resetPassword.dto';
+import {
+  GetUserInfoDto,
+  CreateUserDto,
+  ResetPasswordDto,
+  UpdateUsernameDto,
+} from './user.dto';
 
 @Controller('user')
 export class UserController {
@@ -11,23 +15,18 @@ export class UserController {
     return await this.userService.signupUser(user);
   }
 
-  @Post('login')
-  async loginUser(@Body() user: { email: string; password: string }) {
-    return await this.userService.loginUser(user);
-  }
-
   @Post('reset-password')
   async resetPassword(@Body() user: ResetPasswordDto) {
     return await this.userService.resetPassword(user);
   }
 
   @Patch('update-username')
-  async updateUsername(@Body() body: { email: string; newUsername: string }) {
-    return await this.userService.updateUsername(body.email, body.newUsername);
+  async updateUsername(@Body() user: UpdateUsernameDto) {
+    return await this.userService.updateUsername(user.email, user.username);
   }
 
-  @Get('user-info')
-  async getUserInfo(@Query('email') email: string) {
-    return await this.userService.getUserInfo(email);
+  @Post('user-info')
+  async getUserInfo(@Body() user: GetUserInfoDto) {
+    return await this.userService.getUserInfo(user.access_token);
   }
 }
