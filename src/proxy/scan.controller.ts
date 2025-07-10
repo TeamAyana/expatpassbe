@@ -1,20 +1,41 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  All,
+  Req,
+  Res,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { AxiosError, AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { Stream } from 'stream';
+import { UserService } from '@/user/user.service';
 
 @Controller('scan')
 export class ScanController {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
+    const userInfo = await this.userService.getUserInfo(
+      req.headers['authorization'] as string,
+    );
+    if (userInfo instanceof HttpException) {
+      return res.status(userInfo.getStatus()).json(userInfo.getResponse());
+    }
+    const userId = (userInfo?.data as { id: string })?.id;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Unauthorized' });
+    }
     const scanServiceUrl = this.configService.get<string>(
       'SCAN_SERVICE_URL',
       'http://scan-service.internal',
@@ -24,6 +45,7 @@ export class ScanController {
 
     const headers = {
       ...req.headers,
+      'x-user-id': userId,
       'x-internal-secret': this.configService.get<string>('INTERNAL_SECRET'),
     };
 

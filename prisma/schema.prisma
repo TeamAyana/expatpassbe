@@ -21,31 +21,36 @@ enum DocumentStatus {
   FAILED
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  username  String   @unique
-  fullname  String?
-  auth0Id   String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  documents Document[]
+model Users {
+  id               String     @id @default(uuid())
+  email            String     @unique
+  emailVerified    Boolean    @default(false)
+  password         String?
+  username         String?
+  verificationCode String?
+  verificationCodeExpiresAt DateTime? 
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @default(now())
+  documents        Document[]
+
+  @@map("users")
 }
 
 model Document {
-  id         String   @id @default(uuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
-  name       String
-  type       String
+  id            String         @id @default(cuid())
+  userId        String
+  user          Users          @relation(fields: [userId], references: [id])
+  name          String
+  type          String
   // Use the new enum for status
-  status     DocumentStatus @default(UPLOADED)
-  s3Key      String
-  ocrResult  Json?
+  status        DocumentStatus @default(UPLOADED)
+  s3Key         String
+  ocrResult     Json?
   // Add this field to store OCR results
   extractedData Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([userId])
+  @@map("documents")
 }

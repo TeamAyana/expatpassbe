@@ -1,30 +1,60 @@
-import { Controller, All, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  All,
+  Req,
+  Res,
+  Logger,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { Request, Response } from 'express';
 import { AxiosError, AxiosResponse } from 'axios';
 import { firstValueFrom } from 'rxjs';
 import { Stream } from 'stream';
+import { UserService } from '@/user/user.service';
 
 @Controller('documents')
-export class ProxyController {
+@ApiTags('documents')
+export class DocumentsController {
+  private readonly logger = new Logger(DocumentsController.name);
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly userService: UserService,
   ) {}
 
   @All('*')
   async proxy(@Req() req: Request, @Res() res: Response) {
+    const userInfo = await this.userService.getUserInfo(
+      req.headers['authorization'] as string,
+    );
+    if (userInfo instanceof HttpException) {
+      return res.status(userInfo.getStatus()).json(userInfo.getResponse());
+    }
+    const userId = (userInfo?.data as { id: string })?.id;
+    if (!userId) {
+      return res
+        .status(HttpStatus.UNAUTHORIZED)
+        .json({ message: 'Unauthorized' });
+    }
+    this.logger.log(`User ID: ${userId}`);
     const documentServiceUrl = this.configService.get<string>(
       'DOCUMENT_SERVICE_URL',
       'http://document-service.internal',
     );
-    const url = `${documentServiceUrl}/api/v1${req.originalUrl}`;
+    this.logger.log(
+      `Proxying request to : ${documentServiceUrl}${req.originalUrl}`,
+    );
+    const url = `${documentServiceUrl}${req.originalUrl}`;
     const method = req.method.toLowerCase();
 
     // Add the internal secret header
     const headers = {
       ...req.headers,
+      'x-user-id': userId,
       'x-internal-secret': this.configService.get<string>('INTERNAL_SECRET'),
     };
 

@@ -64,8 +64,7 @@ jobs:
         REMOTE_HOST: ${{ secrets.EC2_HOST }}
         REMOTE_USER: ${{ secrets.EC2_USERNAME }}
         TARGET: "/home/ubuntu/expatpass/auth/expatpassbe"
-        EXCLUDE: "/dist/, /node_modules/"
+        EXCLUDE: "/.github/, /.git/, /node_modules/"
         SCRIPT_AFTER: |
           cd /home/ubuntu/expatpass/auth/expatpassbe
-          pnpm install --frozen-lockfile
           pnpm deploy:dev
