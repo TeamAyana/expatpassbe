@@ -54,6 +54,7 @@ jobs:
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
     
+
     - name: Deploy to EC2 via Rsync
       if: startsWith(github.ref, 'refs/heads/develop-v')
       uses: easingthemes/ssh-deploy@v5.0.0
