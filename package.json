@@ -26,7 +26,7 @@
     "prisma:studio": "pnpx prisma studio",
     "prisma:migrate:prod": "pnpx prisma migrate deploy",
     "prisma:reset": "pnpx prisma migrate reset",
-    "deploy:dev": "pnpm prisma:migrate && pnpm prisma:generate && pnpm build && pnpm start:pm2"
+    "deploy:dev": "pnpm install --frozen-lockfile && pnpm prisma:migrate && pnpm prisma:generate && pnpm start:pm2"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.821.0",

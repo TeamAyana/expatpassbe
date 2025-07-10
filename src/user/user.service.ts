@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ResponseDto } from 'src/common/dto/response.dto';
 
 const myHeaders = {
   'Content-Type': 'application/json',
@@ -32,14 +33,13 @@ export class UserService {
   async signupUser(user: {
     email: string;
     password: string;
-  }): Promise<HttpException | { status: string; message: string; user: any }> {
+  }): Promise<HttpException | ResponseDto> {
     const { email, password } = user;
     const data = {
       client_id: process.env.AUTH0_CLIENT_ID,
       email,
       password,
       connection: AUTH0_CONNECTION,
-      username: email.split('@')[0],
     };
 
     try {
@@ -81,7 +81,7 @@ export class UserService {
       return {
         status: 'success',
         message: 'Signup successful',
-        user: res,
+        data: res,
       };
     } catch (error) {
       this.logger.error(error?.response?.data);
@@ -133,7 +133,10 @@ export class UserService {
     }
   }
 
-  async loginUser(user: { email: string; password: string }) {
+  async loginUser(user: {
+    email: string;
+    password: string;
+  }): Promise<HttpException | ResponseDto> {
     const { email, password } = user;
     const data = {
       client_id: process.env.AUTH0_CLIENT_ID,
@@ -159,7 +162,7 @@ export class UserService {
           HttpStatus.BAD_REQUEST,
         );
       }
-      return { error: null, message: 'Login successful' };
+      return { status: 'success', message: 'Login successful', data: res };
     } catch (error) {
       if (error?.response && error?.response?.data) {
         return new HttpException(
@@ -171,34 +174,38 @@ export class UserService {
     }
   }
 
-  async resetPassword(user: { email: string }) {
+  async resetPassword(user: {
+    email: string;
+  }): Promise<HttpException | ResponseDto> {
     const { email } = user;
-    const data = {
-      client_id: process.env.AUTH0_CLIENT_ID,
-      email: email,
-      connection: AUTH0_CONNECTION,
-    };
-
     try {
       const response = await firstValueFrom(
-        this.httpService.post(
+        this.httpService.post<Auth0Response>(
           `https://${process.env.AUTH0_DOMAIN}/dbconnections/change_password`,
-          data,
+          {
+            client_id: process.env.AUTH0_CLIENT_ID,
+            email: email,
+            connection: AUTH0_CONNECTION,
+          },
           { headers: myHeaders },
         ),
       );
       const res = response.data;
-      console.log(res);
+      this.logger.log(res);
 
-      if (res === 'Not found') {
+      if (res.statusCode === 400) {
         return new HttpException(
           {
-            error: res,
+            error: res.description ?? 'Failed to reset password',
           },
           HttpStatus.NOT_FOUND,
         );
       }
-      return res;
+      return {
+        status: 'success',
+        message: 'Password reset successful',
+        data: res,
+      };
     } catch (error) {
       if (error.response && error.response.data) {
         return new HttpException(
@@ -253,5 +260,23 @@ export class UserService {
       ),
     );
     return { message: 'Username updated', user: updateResponse.data };
+  }
+
+  async getUserInfo(email: string): Promise<ResponseDto> {
+    const tokenResponse = await firstValueFrom(
+      this.httpService.post(
+        `https://${process.env.AUTH0_DOMAIN}/userinfo?response_type=code&client_id=${process.env.AUTH0_CLIENT_ID}`,
+        {},
+        { headers: { 'Content-Type': 'application/json' } },
+      ),
+    );
+    this.logger.log(tokenResponse.data);
+    const accessToken = tokenResponse.data.access_token;
+
+    return {
+      status: 'success',
+      message: 'User info fetched',
+      data: tokenResponse.data,
+    };
   }
 }
