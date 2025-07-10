@@ -22,21 +22,21 @@ enum DocumentStatus {
 }
 
 model Users {
-  id        String     @id @default(cuid())
+  id        String     @id @default(uuid())
   email     String     @unique
   password  String?
   username  String?
   fullname  String?
   auth0Id   String?
   createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  updatedAt DateTime   @default(now())
   documents Document[]
 
   @@map("users")
 }
 
 model Document {
-  id            String         @id @default(uuid())
+  id            String         @id @default(cuid())
   userId        String
   user          Users          @relation(fields: [userId], references: [id])
   name          String

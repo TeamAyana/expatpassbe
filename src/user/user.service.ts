@@ -38,7 +38,6 @@ export class UserService {
       connection: AUTH0_CONNECTION,
       username: email.split('@')[0],
     };
-    this.logger.log(data);
 
     try {
       const response = await firstValueFrom(
