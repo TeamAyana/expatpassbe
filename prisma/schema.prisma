@@ -13,12 +13,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Add this enum to define the possible statuses
+// Document status enum
 enum DocumentStatus {
   UPLOADED
   SCANNING
   COMPLETED
   FAILED
+}
+
+// Visa status enum for user visa documents
+enum VisaStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+  REJECTED
+}
+
+// Application status enum for visa applications
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  UNDER_REVIEW
+}
+
+// Notification type enum
+enum NotificationType {
+  VISA_EXPIRY
+  PASSPORT_EXPIRY
+  PERMIT_EXPIRY
+  TRAVEL_RESTRICTION
+  VISA_REQUIREMENT_CHANGE
+  GENERAL
 }
 
 model Users {
@@ -32,6 +59,7 @@ model Users {
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @default(now())
   documents        Document[]
+  notifications    Notification[]
 
   @@map("users")
 }
@@ -42,15 +70,32 @@ model Document {
   user          Users          @relation(fields: [userId], references: [id])
   name          String
   type          String
-  // Use the new enum for status
   status        DocumentStatus @default(UPLOADED)
   s3Key         String
   ocrResult     Json?
-  // Add this field to store OCR results
-  extractedData Json?
+  extractedData Json?          // For storing visa data as JSON
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
   @@index([userId])
   @@map("documents")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  isRead      Boolean          @default(false)
+  scheduledFor DateTime?
+  sentAt      DateTime?
+  metadata    Json?            // Additional data like visaId, countryId, etc.
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  // Relations
+  user        Users            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

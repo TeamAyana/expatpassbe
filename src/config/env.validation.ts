@@ -18,6 +18,11 @@ const envSchema = z.object({
   
   // Database URL
   DATABASE_URL: z.string().url('Invalid database URL'),
+  
+  // Service URLs
+  DOCUMENT_SERVICE_URL: z.string().url('Invalid document service URL'),
+  SCAN_SERVICE_URL: z.string().url('Invalid scan service URL'),
+  VISA_COMPLIANCE_SERVICE_URL: z.string().url('Invalid visa compliance service URL'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;
