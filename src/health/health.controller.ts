@@ -1,6 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheckService, HttpHealthIndicator, HealthCheck, PrismaHealthIndicator } from '@nestjs/terminus';
-import { PrismaClient } from 'generated/prisma';
+import {
+  HealthCheck,
+  HealthCheckService,
+  HttpHealthIndicator,
+  PrismaHealthIndicator,
+} from '@nestjs/terminus';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {
@@ -8,7 +13,7 @@ export class HealthController {
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
     private db: PrismaHealthIndicator,
-    private prismaClient: PrismaClient, // Inject PrismaClient for database health check
+    private prismaClient: PrismaService, // Inject PrismaClient for database health check
   ) {}
 
   @Get('swagger')

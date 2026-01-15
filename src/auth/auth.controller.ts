@@ -1,9 +1,28 @@
-import { Controller, Get, Post, UseGuards, Req, Res, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { AuthService } from './auth.service';
-import { ApiTags, ApiOperation, ApiQuery, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { LoginResponseDto, CallbackResponseDto, ProfileResponseDto, ErrorResponseDto } from './dto/auth.dto';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Request } from 'express';
+import { AuthService } from './auth.service';
+import {
+  CallbackResponseDto,
+  ErrorResponseDto,
+  LoginResponseDto,
+  ProfileResponseDto,
+} from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -13,7 +32,8 @@ export class AuthController {
   @Get('login')
   @ApiOperation({
     summary: 'Initiate Auth0 login',
-    description: 'Returns the Auth0 authorization URL for the specified client type (web or mobile)',
+    description:
+      'Returns the Auth0 authorization URL for the specified client type (web or mobile)',
   })
   @ApiQuery({
     name: 'client',
@@ -33,7 +53,8 @@ export class AuthController {
   })
   login(@Query('client') client: string, @Res() res) {
     const state = this.authService.generateState();
-    const url = `https://${process.env.AUTH0_DOMAIN}/authorize?` +
+    const url =
+      `https://${process.env.AUTH0_DOMAIN}/authorize?` +
       `response_type=code&` +
       `client_id=${process.env.AUTH0_CLIENT_ID}&` +
       `redirect_uri=${process.env.AUTH0_CALLBACK_URL}&` +
@@ -45,7 +66,7 @@ export class AuthController {
       res.cookie('auth_state', state, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+        sameSite: 'lax',
       });
     }
 
@@ -55,7 +76,8 @@ export class AuthController {
   @Get('callback')
   @ApiOperation({
     summary: 'Handle Auth0 callback',
-    description: 'Processes the Auth0 callback, exchanges the code for tokens, and returns user information',
+    description:
+      'Processes the Auth0 callback, exchanges the code for tokens, and returns user information',
   })
   @ApiQuery({
     name: 'code',
@@ -77,7 +99,12 @@ export class AuthController {
     description: 'Invalid state or authentication failed',
     type: ErrorResponseDto,
   })
-  async callback(@Req() req, @Res() res, @Query('code') code: string, @Query('state') state: string) {
+  async callback(
+    @Req() req,
+    @Res() res,
+    @Query('code') code: string,
+    @Query('state') state: string,
+  ) {
     // Verify state for web clients
     if (req.headers['user-agent'].includes('Mozilla')) {
       const storedState = req.cookies?.auth_state;
@@ -93,7 +120,9 @@ export class AuthController {
 
       // For web clients, redirect to frontend with token
       if (req.headers['user-agent'].includes('Mozilla')) {
-        return res.redirect(`${process.env.FRONTEND_URL}/auth/callback?token=${tokens.accessToken}`);
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/auth/callback?token=${tokens.accessToken}`,
+        );
       }
 
       // For mobile clients, return JSON response
@@ -138,6 +167,8 @@ export class AuthController {
     description: 'Redirects to Auth0 logout page',
   })
   logout(@Res() res) {
-    res.redirect(`https://${process.env.AUTH0_DOMAIN}/v2/logout?client_id=${process.env.AUTH0_CLIENT_ID}&returnTo=${process.env.FRONTEND_URL}`);
+    res.redirect(
+      `https://${process.env.AUTH0_DOMAIN}/v2/logout?client_id=${process.env.AUTH0_CLIENT_ID}&returnTo=${process.env.FRONTEND_URL}`,
+    );
   }
 }
