@@ -10,6 +10,12 @@ import {
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
+  @Post('signin')
+  async signinUser(@Body() user: CreateUserDto) {
+    return await this.userService.signinUser(user);
+  }
+
   @Post('signup')
   async signupUser(@Body() user: CreateUserDto) {
     return await this.userService.signupUser(user);

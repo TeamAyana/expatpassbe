@@ -1,21 +1,19 @@
 import { Controller, Get } from '@nestjs/common';
 import {
+  HealthCheck,
   HealthCheckService,
   HttpHealthIndicator,
-  HealthCheck,
   PrismaHealthIndicator,
 } from '@nestjs/terminus';
-import { PrismaService } from '../prisma/prisma.service';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Controller('health')
 export class HealthController {
-  private readonly prismaClient = new PrismaClient();
   constructor(
     private health: HealthCheckService,
     private http: HttpHealthIndicator,
     private db: PrismaHealthIndicator,
-    private prisma: PrismaService,
+    private prismaClient: PrismaService, // Inject PrismaClient for database health check
   ) {}
 
   @Get('swagger')

@@ -5,12 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Document status enum
@@ -49,17 +49,17 @@ enum NotificationType {
 }
 
 model Users {
-  id               String     @id @default(uuid())
-  email            String     @unique
-  emailVerified    Boolean    @default(false)
-  password         String?
-  username         String?
-  verificationCode String?
-  verificationCodeExpiresAt DateTime? 
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @default(now())
-  documents        Document[]
-  notifications    Notification[]
+  id                        String         @id @default(uuid())
+  email                     String         @unique
+  emailVerified             Boolean        @default(false)
+  password                  String?
+  username                  String?
+  verificationCode          String?
+  verificationCodeExpiresAt DateTime?
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @default(now())
+  documents                 Document[]
+  notifications             Notification[]
 
   @@map("users")
 }
@@ -73,7 +73,7 @@ model Document {
   status        DocumentStatus @default(UPLOADED)
   s3Key         String
   ocrResult     Json?
-  extractedData Json?          // For storing visa data as JSON
+  extractedData Json? // For storing visa data as JSON
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -82,20 +82,20 @@ model Document {
 }
 
 model Notification {
-  id          String           @id @default(cuid())
-  userId      String
-  type        NotificationType
-  title       String
-  message     String
-  isRead      Boolean          @default(false)
+  id           String           @id @default(cuid())
+  userId       String
+  type         NotificationType
+  title        String
+  message      String
+  isRead       Boolean          @default(false)
   scheduledFor DateTime?
-  sentAt      DateTime?
-  metadata    Json?            // Additional data like visaId, countryId, etc.
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  sentAt       DateTime?
+  metadata     Json? // Additional data like visaId, countryId, etc.
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   // Relations
-  user        Users            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user Users @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }

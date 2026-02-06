@@ -7,6 +7,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 const myHeaders = {
   'Content-Type': 'application/json',
   Accept: 'application/json',
+  authorization: `Bearer ${process.env.AUTH0_CLIENT_SECRET}`,
 };
 
 const AUTH0_CONNECTION = 'Username-Password-Authentication';
@@ -33,6 +34,76 @@ export class UserService {
     private readonly httpService: HttpService,
     private readonly prisma: PrismaService,
   ) {}
+
+  async signinUser(user: {
+    email: string;
+    password: string;
+  }): Promise<HttpException | ResponseDto> {
+    const { email, password } = user;
+    const data = {
+      client_id: process.env.AUTH0_CLIENT_ID,
+      client_secret: process.env.AUTH0_CLIENT_SECRET,
+      audience: process.env.AUTH0_AUDIENCE,
+      username: email,
+      password,
+      scope: 'openid profile email',
+      connection: AUTH0_CONNECTION,
+      grant_type: 'password',
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<Auth0Response>(
+          `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+          data,
+          { headers: myHeaders },
+        ),
+      );
+      const res = response.data;
+      this.logger.log(res);
+
+      if (res.statusCode === 400) {
+        const errorMessage = res.description || 'An error occurred.';
+        let errorPayload: Auth0ErrorResponse = {
+          error: res.code ?? '',
+          message: errorMessage,
+        };
+
+        if (res.code === 'invalid_password') {
+          const policies = res.policy.split('\n').map((el: string) => {
+            let cleanText = el.replace(/^\s*\*\s*/gm, '');
+            cleanText = cleanText.charAt(0).toUpperCase() + cleanText.slice(1);
+            return cleanText;
+          });
+          errorPayload = {
+            error: 'password error',
+            message: res.message ?? '',
+            policy: policies,
+          };
+        } else if (res.code === 'invalid_signup') {
+          errorPayload.message =
+            'Invalid credentials, Please check and try again.';
+        }
+
+        return new HttpException(errorPayload, HttpStatus.BAD_REQUEST);
+      }
+      return {
+        status: 'success',
+        message: 'Signup successful',
+        data: res,
+      };
+    } catch (error) {
+      this.logger.log(error);
+      this.logger.error(error?.response?.data);
+      if (error?.response && error?.response?.data) {
+        return new HttpException(
+          error.response.data,
+          error.response.status || 500,
+        );
+      }
+      throw error;
+    }
+  }
 
   async signupUser(user: {
     email: string;
@@ -84,7 +155,7 @@ export class UserService {
       }
       return {
         status: 'success',
-        message: 'Signup successful',
+        message: 'Signin successful',
         data: res,
       };
     } catch (error) {
@@ -172,13 +243,31 @@ export class UserService {
   async getUserInfo(accessToken: string): Promise<HttpException | ResponseDto> {
     try {
       const userInfo = await firstValueFrom(
-        this.httpService.get(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
-          headers: { access_token: `${accessToken}` },
+        this.httpService.get<{
+          sub: string;
+          nickname: string;
+          name: string;
+          picture: string;
+          updated_at: string;
+        }>(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
+          headers: {
+            Authorization: !accessToken.trim().startsWith('Bearer')
+              ? `Bearer ${accessToken}`
+              : accessToken,
+          },
         }),
       );
       this.logger.log(userInfo.data);
-      const user = await this.prisma.users.findUnique({
-        where: { email: (userInfo?.data as { email: string })?.email },
+      if (!userInfo.data.name) {
+        return new HttpException('Unable to authenticate user', 401);
+      }
+      const user = await this.prisma.users.upsert({
+        where: { email: userInfo.data.name },
+        update: {},
+        create: {
+          email: userInfo.data.name,
+          emailVerified: true,
+        },
       });
       if (!user) {
         return new HttpException('User not found', HttpStatus.NOT_FOUND);
@@ -187,15 +276,10 @@ export class UserService {
       return {
         status: 'success',
         message: 'User info fetched',
-        data: {
-          id: user.id,
-          email: user.email,
-          username: user.username,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+        data: user,
       };
     } catch (error) {
+      this.logger.log(error);
       this.logger.error(error?.response?.data);
       if (error?.response && error?.response?.data) {
         return new HttpException(
